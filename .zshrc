@@ -1,0 +1,57 @@
+export ZSH="$HOME/.oh-my-zsh"
+
+#######################################
+########### HISTORY CONFIGS ###########
+#######################################
+HISTSIZE=10000
+SAVEHIST=10000
+HISTFILE=$ZDOTDIR/.zsh_history
+HISTORY_IGNORE="(ls *|cd *|pwd|exit|date *|* --help|ll *|lla *)"
+setopt histignorealldups sharehistory
+setopt appendhistory
+setopt hist_ignore_dups
+setopt hist_ignore_space
+
+#######################################
+############ ZSH CONFIGS ##############
+#######################################
+ZSH_THEME="random"
+zstyle ':omz:update' mode disabled
+COMPLETION_WAITING_DOTS="true"
+DISABLE_UNTRACKED_FILES_DIRTY="true"
+zstyle ':completion:*:*:docker:*' option-stacking yes
+zstyle ':completion:*:*:docker-*:*' option-stacking yes
+
+#######################################
+############### PLUGINGS ##############
+#######################################
+plugins=(git asdf direnv docker)
+
+source $ZSH/oh-my-zsh.sh
+
+
+#######################################
+################ COMMON ###############
+#######################################
+export LANG=en_US.UTF-8
+export PYTHONSTARTUP=$HOME/.pythonrc
+
+#######################################
+############## ALIASES ################
+#######################################
+alias config='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
+
+
+#######################################
+############## FUNCTIONS ##############
+#######################################
+function clone () {
+    clone_path=$(echo $1 | sed -e 's/^git:\/\///' -e 's/^https\?:\/\///' -e 's/:/\//g' -e 's/\.git$//' -e 's/^git@//')
+    clone_path="$HOME/Work/${clone_path}"
+    mkdir -p $clone_path
+    git clone $1 $clone_path
+    cd $clone_path
+}
+
+# Source local zshrc
+[ -f $HOME/.local.zshrc ] && source $HOME/.local.zshrc
