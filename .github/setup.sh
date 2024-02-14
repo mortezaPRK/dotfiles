@@ -36,11 +36,11 @@ fi
 
 brew_taps="homebrew/cask-fonts github/gh "
 brew_casks="rectangle visual-studio-code font-fira-code spotify vlc iterm2 "
-brew_formula="asdf jq bash-completion watch gh "
+brew_formula="asdf jq bash-completion watch gh wget "
 if [ -n "$WORK_MACHINE" ] ; then
     brew_taps+="blendle/blendle "
-    brew_casks+="datagrip postman docker intellij-idea slack "
-    brew_formula+="jfrog-cli kns awscli kubernetes-cli libpq terraform grpcurl vault helm istioctl "
+    brew_casks+="datagrip postman docker intellij-idea "
+    brew_formula+="jfrog-cli stern kns awscli kubernetes-cli libpq terraform grpcurl vault helm istioctl "
 fi
 
 for tap in $brew_taps; do
@@ -68,23 +68,59 @@ fi
 sudo rm -rf $SUDOERS_FILE
 
 # System configs
-defaults write com.apple.screencapture type jpg # JPG for screenshots
-defaults write com.apple.dock persistent-apps -array # Reset the dock to empty
-defaults write com.apple.finder ShowPathbar -bool true # show path bar
-defaults write com.apple.finder ShowStatusBar -bool true # show status bar
-defaults write NSGlobalDomain AppleShowAllExtensions -bool true # Finder: show all filename extensions
-defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false  # Disable the warning when changing a file extension
-defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true # Avoid creating .DS_Store files on network volumes
-defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true # Avoid creating .DS_Store files on USB volumes
-defaults write NSGlobalDomain ApplePressAndHoldEnabled -bool false # Disable press-and-hold for keys in favor of key repeat
-defaults write -g InitialKeyRepeat -int 15 # Keyboard delay for repeat
-defaults write -g KeyRepeat -int 2 # Keyboard repeat rate
-defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true # tap to click
-defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true  # tap to click
+osascript -e 'tell application "System Preferences" to quit' && sleep 5                                 # Close System Preference to avoid issues
+
+## Global
+defaults write -g AppleInterfaceStyle Dark                                                              # Dark theme
+defaults write -g AppleShowAllExtensions -bool true                                                     # Finder: show all filename extensions
+defaults write -g ApplePressAndHoldEnabled -bool false                                                  # Disable press-and-hold for keys in favor of key repeat
+defaults write -g InitialKeyRepeat -int 15                                                              # Keyboard delay for repeat
+defaults write -g KeyRepeat -int 2                                                                      # Keyboard repeat rate
+defaults write -g NSAutomaticCapitalizationEnabled -bool false                                          # Disable automatic capitalization
+defaults write -g NSAutomaticPeriodSubstitutionEnabled -bool false                                      # Disable peroid substitution
+defaults write -g NSAutomaticQuoteSubstitutionEnabled -bool false                                       # Disable smart quotes
+defaults write -g NSAutomaticDashSubstitutionEnabled -bool false                                        # Disable smart dashes
+defaults write -g NSAutomaticCapitalizationEnabled -bool false                                          # Disable automatic capitalization
+defaults write -g NSAutomaticSpellingCorrectionEnabled -bool false                                      # Disable auto-correct
+defaults write -g NSAutomaticTextCompletionEnabled -bool false                                          # Disable text-completion
+defaults write -g com.apple.keyboard.fnState -int 1                                                     # Use F1..F12 without fn key
+
+## Finder
+defaults write com.apple.finder ShowStatusBar -bool true                                                # show status bar
+defaults write com.apple.finder FXEnableExtensionChangeWarning -bool false                              # Disable the warning when changing a file extension
+defaults write com.apple.finder FXEnableExtensionsChangeWarning -bool false                             # Disable file extension change warning
+defaults write com.apple.finder FXPreferredViewStyle icnv                                               # Set preferred view style to "Icon View"
+defaults write com.apple.finder NewWindowTarget PfHm                                                    # Set default path for new windows to "Home"
+defaults write com.apple.finder "_FXSortFoldersFirst" -bool true                                        # Show folders on top in Finder
+defaults write com.apple.finder "_FXSortFoldersFirstOnDesktop" -bool true                               # Show folders on top in Desktop
+defaults write com.apple.finder FK_DefaultIconViewSettings -dict-add arrangeBy name                     # Sort by name
+defaults write com.apple.finder ShowPathbar -bool true                                                  # show path bar
+
+## Dock
+defaults write com.apple.dock persistent-apps -array                                                    # Reset the dock to empty
+defaults write com.apple.dock "show-recents" -bool false                                                # Don't show recent apps
+
+# Touchpad
+defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true                   # Tap to click on bluetooth trackpad
+defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true                                    # Tap to click on builtin trackpad
+defaults com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerDrag -int 1              # Three finger scorll bluetooth trackpad
+defaults com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerHorizSwipeGesture -int 0 # Three finger scorll bluetooth trackpad
+defaults com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerVertSwipeGesture -int 0  # Three finger scorll bluetooth trackpad
+defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerDrag -int 1                         # Three finger scorll builtin trackpad
+defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerHorizSwipeGesture -int 0            # Three finger scorll builtin trackpad
+defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerVertSwipeGesture -int 0             # Three finger scorll builtin trackpad
+
+
+
+## Misc
+defaults write com.apple.screencapture type jpg                                                         # JPG for screenshots
+defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true                            # Avoid creating .DS_Store files on network volumes
+defaults write com.apple.desktopservices DSDontWriteUSBStores -bool true                                # Avoid creating .DS_Store files on USB volumes
+
+
 
 # Activate new settings
 /System/Library/PrivateFrameworks/SystemAdministration.framework/Resources/activateSettings -u
 
-# Kill to use new configs
-killall Dock
-killall Finder
+# Ask to reboot
+echo "Reboot the system"
