@@ -2,3 +2,5 @@
 .fseventsd
 .Spotlight-V100
 .tool-versions
+.vscode/settings.json
+.vscode/launch.json
