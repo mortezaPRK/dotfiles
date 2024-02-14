@@ -1,4 +1,5 @@
 export ZSH="$HOME/.oh-my-zsh"
+export PATH="$HOME/.bin:$PATH"
 
 #######################################
 ########### HISTORY CONFIGS ###########
