@@ -6,7 +6,7 @@ export PATH="$HOME/.bin:$PATH"
 #######################################
 HISTSIZE=10000
 SAVEHIST=10000
-HISTFILE=$ZDOTDIR/.zsh_history
+HISTFILE=$HOME/.zsh_history
 HISTORY_IGNORE="(ls *|cd *|pwd|exit|date *|* --help|ll *|lla *)"
 setopt histignorealldups sharehistory
 setopt appendhistory
@@ -16,7 +16,7 @@ setopt hist_ignore_space
 #######################################
 ############ ZSH CONFIGS ##############
 #######################################
-ZSH_THEME="random"
+ZSH_THEME="af-magic"  # bira
 zstyle ':omz:update' mode disabled
 COMPLETION_WAITING_DOTS="true"
 DISABLE_UNTRACKED_FILES_DIRTY="true"
@@ -31,6 +31,8 @@ plugins=(git asdf direnv docker)
 source $ZSH/oh-my-zsh.sh
 
 
+# TODO: make it optional for work laptop
+source <(stern --completion=zsh)
 #######################################
 ################ COMMON ###############
 #######################################
@@ -41,7 +43,7 @@ export PYTHONSTARTUP=$HOME/.pythonrc
 ############## ALIASES ################
 #######################################
 alias config='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
-
+alias k='kubectl'
 
 #######################################
 ############## FUNCTIONS ##############
