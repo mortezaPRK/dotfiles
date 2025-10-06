@@ -1,6 +1,6 @@
 export ZSH="$HOME/.oh-my-zsh"
 export PATH="$HOME/.bin:$PATH"
-export ASDF_DATA_DIR="$HOME/.asdf
+export ASDF_DATA_DIR="$HOME/.asdf"
 export PATH="$ASDF_DATA_DIR/shims:$PATH"
 
 #######################################
@@ -33,9 +33,8 @@ fpath+=${ZSH}/custom/plugins/zsh-completions/src
 autoload -U compinit && compinit
 source $ZSH/oh-my-zsh.sh
 
-
-# TODO: make it optional for work laptop
-source <(stern --completion=zsh)
+[[ -f ${ASDF_DATA_DIR}/plugins/java/set-java-home.zsh ]] && . ${ASDF_DATA_DIR}/plugins/java/set-java-home.zsh
+command -v stern &> /dev/null && source <(stern --completion=zsh)
 #######################################
 ################ COMMON ###############
 #######################################
