@@ -1,6 +1,6 @@
 export ZSH="$HOME/.oh-my-zsh"
 export PATH="$HOME/.bin:$PATH"
-export ASDF_DATA_DIR=/Users/morteza.pourkazemi/.asdf
+export ASDF_DATA_DIR="$HOME/.asdf
 export PATH="$ASDF_DATA_DIR/shims:$PATH"
 
 #######################################
