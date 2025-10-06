@@ -1,5 +1,7 @@
 export ZSH="$HOME/.oh-my-zsh"
 export PATH="$HOME/.bin:$PATH"
+export ASDF_DATA_DIR=/Users/morteza.pourkazemi/.asdf
+export PATH="$ASDF_DATA_DIR/shims:$PATH"
 
 #######################################
 ########### HISTORY CONFIGS ###########
@@ -27,7 +29,8 @@ zstyle ':completion:*:*:docker-*:*' option-stacking yes
 ############### PLUGINGS ##############
 #######################################
 plugins=(git asdf direnv docker)
-
+fpath+=${ZSH}/custom/plugins/zsh-completions/src
+autoload -U compinit && compinit
 source $ZSH/oh-my-zsh.sh
 
 
