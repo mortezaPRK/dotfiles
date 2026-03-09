@@ -1,6 +1,8 @@
-.DS_Store
-.fseventsd
-.Spotlight-V100
-.tool-versions
-.vscode/settings.json
-.vscode/launch.json
+**/.DS_Store
+**/.fseventsd
+**/.Spotlight-V100
+**/.tool-versions
+**/.vscode/settings.json
+**/.vscode/launch.json
+**/.claude/
+**/.zed/

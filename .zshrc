@@ -46,7 +46,8 @@ export PYTHONSTARTUP=$HOME/.pythonrc
 #######################################
 alias config='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
 alias k='kubectl'
-
+alias d='docker'
+alias dc='docker compose'
 #######################################
 ############## FUNCTIONS ##############
 #######################################
