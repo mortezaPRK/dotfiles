@@ -45,6 +45,9 @@ export PYTHONSTARTUP=$HOME/.pythonrc
 #######################################
 alias config='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
 alias k='kubectl'
+alias d='docker'
+alias dc='docker compose'
+alias cdtmp='cd `mktemp -d`'
 
 #######################################
 ############## FUNCTIONS ##############
@@ -95,6 +98,11 @@ claudew() {
           done < <(jq -r --arg mode "$mode" '.[$mode] | to_entries | .[] | "\(.key)=\(.value)"' "$config_file")                                                                                             
           claude "$@"                                                                                                                                                                                       
       )  
+}
+
+function cleanupClaudeJson () {
+    jq '.projects |= with_entries(select(.key | startswith("/private/var/folders/") | not))' ~/.claude.json > tmp.json
+    mv tmp.json ~/.claude.json
 }
 
 # Source local zshrc
