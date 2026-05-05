@@ -3,4 +3,6 @@
 .Spotlight-V100
 .tool-versions
 .vscode/settings.json
+.zed/
+.claude/settings.local.json
 .vscode/launch.json

@@ -1,5 +1,4 @@
-export ZSH="$HOME/.oh-my-zsh"
-export PATH="$HOME/.bin:$PATH"
+export PATH="$HOME/.bin:$HOME/.local/bin:$PATH"
 export ASDF_DATA_DIR="$HOME/.asdf"
 export PATH="$ASDF_DATA_DIR/shims:$PATH"
 
@@ -18,20 +17,20 @@ setopt hist_ignore_space
 #######################################
 ############ ZSH CONFIGS ##############
 #######################################
-ZSH_THEME="af-magic"  # bira
-zstyle ':omz:update' mode disabled
-COMPLETION_WAITING_DOTS="true"
-DISABLE_UNTRACKED_FILES_DIRTY="true"
-zstyle ':completion:*:*:docker:*' option-stacking yes
-zstyle ':completion:*:*:docker-*:*' option-stacking yes
+bindkey '^R' history-incremental-search-backward
+autoload -U up-line-or-beginning-search
+autoload -U down-line-or-beginning-search
+zle -N up-line-or-beginning-search
+zle -N down-line-or-beginning-search
+bindkey "^[[A" up-line-or-beginning-search   # Up arrow
+bindkey "^[[B" down-line-or-beginning-search # Down arrow
 
 #######################################
 ############### PLUGINGS ##############
 #######################################
-plugins=(git asdf direnv docker)
 fpath+=${ZSH}/custom/plugins/zsh-completions/src
+fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
 autoload -U compinit && compinit
-source $ZSH/oh-my-zsh.sh
 
 [[ -f ${ASDF_DATA_DIR}/plugins/java/set-java-home.zsh ]] && . ${ASDF_DATA_DIR}/plugins/java/set-java-home.zsh
 command -v stern &> /dev/null && source <(stern --completion=zsh)
@@ -58,5 +57,50 @@ function clone () {
     cd $clone_path
 }
 
+claudew() {
+    local config_file="$HOME/.config/claudew.json"
+    local mode="${CLAUDEW_MODE}"
+
+    # Check if config file exists
+    if [[ ! -f "$config_file" ]]; then
+        echo "Error: Config file not found at $config_file" >&2
+        return 1
+    fi
+
+    if ! command -v fzf &> /dev/null; then
+        echo "Error: fzf is not installed." >&2
+        return 1
+    fi
+
+    if ! command -v jq &> /dev/null; then
+        echo "Error: jq is not installed." >&2
+        return 1
+    fi
+
+    # If mode not set via env, check for fzf and prompt
+    while ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null; do
+        mode=$(jq -r 'keys[]' "$config_file" | fzf --prompt="Select Claude environment: " --height=40% --reverse)
+
+        if [[ -z "$mode" ]]; then
+            echo "No environment selected, please try again" >&2
+        elif ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null; then
+            echo "Mode '$mode' not found in config, please select again" >&2
+            mode=""
+        fi
+    done
+
+      (                                                                                                                                                                                                     
+          while IFS='=' read -r key value; do                                                                                                                                                               
+              export "$key=$value"                                                                                                                                                                          
+          done < <(jq -r --arg mode "$mode" '.[$mode] | to_entries | .[] | "\(.key)=\(.value)"' "$config_file")                                                                                             
+          claude "$@"                                                                                                                                                                                       
+      )  
+}
+
 # Source local zshrc
 [ -f $HOME/.local.zshrc ] && source $HOME/.local.zshrc
+
+export PATH="/usr/local/opt/ruby/bin:$PATH"
+export GEM_HOME=$HOME/.gem
+export PATH="$GEM_HOME/ruby/4.0.0/bin:$GEM_HOME/bin:$PATH"
+eval "$(starship init zsh)"
