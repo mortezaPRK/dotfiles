@@ -80,7 +80,16 @@ claudew() {
         return 1
     fi
 
-    # If mode not set via env, check for fzf and prompt
+    # If mode is set, try prefix match (e.g., "teams" matches "teams: Opus 4.7 ...")
+    if [[ -n "$mode" ]]; then
+        local full_key
+        full_key=$(jq -r --arg prefix "$mode" 'keys[] | select(startswith($prefix + ":"))' "$config_file" | head -1)
+        if [[ -n "$full_key" ]]; then
+            mode="$full_key"
+        fi
+    fi
+
+    # If mode not set or not found, prompt with fzf
     while ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null; do
         mode=$(jq -r 'keys[]' "$config_file" | fzf --prompt="Select Claude environment: " --height=40% --reverse)
 
