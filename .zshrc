@@ -45,9 +45,9 @@ export PYTHONSTARTUP=$HOME/.pythonrc
 #######################################
 alias config='/usr/bin/git --git-dir=$HOME/.cfg/ --work-tree=$HOME'
 alias k='kubectl'
-alias d='docker'
-alias dc='docker compose'
+alias d='podman'
 alias cdtmp='cd `mktemp -d`'
+alias g='git'
 
 #######################################
 ############## FUNCTIONS ##############
@@ -63,6 +63,7 @@ function clone () {
 claudew() {
     local config_file="$HOME/.config/claudew.json"
     local mode="${CLAUDEW_MODE}"
+    local settings="$HOME/.claude/settings.json"
 
     # Check if config file exists
     if [[ ! -f "$config_file" ]]; then
@@ -101,12 +102,17 @@ claudew() {
         fi
     done
 
-      (                                                                                                                                                                                                     
-          while IFS='=' read -r key value; do                                                                                                                                                               
-              export "$key=$value"                                                                                                                                                                          
-          done < <(jq -r --arg mode "$mode" '.[$mode] | to_entries | .[] | "\(.key)=\(.value)"' "$config_file")                                                                                             
-          claude "$@"                                                                                                                                                                                       
-      )  
+    if jq -e 'has("model")' "$settings" >/dev/null; then
+        new_config=$(jq 'del(.model)' "$settings")
+        echo "$new_config" > "$settings"
+    fi
+
+      (
+          while IFS='=' read -r key value; do
+              export "$key=$value"
+          done < <(jq -r --arg mode "$mode" '.[$mode] | to_entries | .[] | "\(.key)=\(.value)"' "$config_file")
+          claude "$@"
+      )
 }
 
 function cleanupClaudeJson () {
@@ -114,10 +120,29 @@ function cleanupClaudeJson () {
     mv tmp.json ~/.claude.json
 }
 
+gc() {
+    local default current branch
+
+    default=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)
+    default=${default#origin/}
+
+    current=$(git branch --show-current)
+
+    git branch --merged --format='%(refname:short)' |
+    while IFS= read -r branch; do
+        case "$branch" in
+            ""|"$current"|"$default")
+                continue
+                ;;
+        esac
+
+        if ! git log "$branch" --not origin/HEAD --oneline | grep -q .; then
+            git branch -d "$branch"
+        fi
+    done
+}
+
 # Source local zshrc
 [ -f $HOME/.local.zshrc ] && source $HOME/.local.zshrc
 
-export PATH="/usr/local/opt/ruby/bin:$PATH"
-export GEM_HOME=$HOME/.gem
-export PATH="$GEM_HOME/ruby/4.0.0/bin:$GEM_HOME/bin:$PATH"
 eval "$(starship init zsh)"

@@ -24,3 +24,8 @@
 # Path specific .gitconfig
 # [includeIf "gitdir:~/Work/<org>/"]
 # 	path = ~/Work/<org>/.gitconfig
+[alias]
+	f = fetch -apPft
+	p = !git push --set-upstream origin \"$(git symbolic-ref --short -q HEAD)\"
+	s = !git fetch --all --prune --tags && git pull --ff-only
+
