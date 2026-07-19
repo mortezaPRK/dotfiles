@@ -21,9 +21,6 @@ config config --local status.showUntrackedFiles no
 config remote set-url origin git@github.com:mortezaPRK/dotfiles.git
 
 
-# Install ohmyzsh
-KEEP_ZSHRC=yes CHSH=no RUNZSH=no sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
 # Generate ssh key
 ssh-keygen -t ed25519 -q -f "$HOME/.ssh/id_ed25519" -N ""
 
@@ -34,35 +31,15 @@ elif [ -d "/opt/homebrew" ]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
-brew_taps="homebrew/cask-fonts github/gh "
-brew_casks="rectangle visual-studio-code font-fira-code spotify vlc iterm2 "
-brew_formula="asdf jq bash-completion watch gh wget "
-if [ -n "$WORK_MACHINE" ] ; then
-    brew_taps+="blendle/blendle "
-    brew_casks+="datagrip postman docker intellij-idea "
-    brew_formula+="jfrog-cli stern kns awscli kubernetes-cli libpq terraform grpcurl vault helm istioctl "
-fi
+brew_taps="github/gh "
+brew_casks="rectangle font-fira-code font-fira-code-nerd-font vlc iterm2 claude-code ghostty podman-desktop zed"
+brew_formula="asdf jq bash-completion watch gh wget fzf starship uv"
 
 for tap in $brew_taps; do
     brew tap $tap
 done
 brew install --cask $brew_casks
 brew install $brew_formula
-
-# Install other binaries
-if [ -n "$WORK_MACHINE" ] ; then
-    # KTX
-    tmp_dir=$(mktemp -d)
-    ktx_url=https://raw.githubusercontent.com/blendle/kns/master/bin/ktx
-
-    curl $ktx_url -o $tmp_dir/ktx
-    chmod +x $tmp_dir/ktx
-    sudo mv $tmp_dir/ktx /usr/local/bin/ktx
-    rm -rf $tmp_dir
-    
-    # Libpq
-    brew link --force libpq
-fi
 
 # Remove passwordless sudo access
 sudo rm -rf $SUDOERS_FILE
