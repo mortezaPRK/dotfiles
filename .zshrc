@@ -60,61 +60,6 @@ function clone () {
     cd $clone_path
 }
 
-claudew() {
-    local config_file="$HOME/.config/claudew.json"
-    local mode="${CLAUDEW_MODE}"
-    local settings="$HOME/.claude/settings.json"
-
-    # Check if config file exists
-    if [[ ! -f "$config_file" ]]; then
-        echo "Error: Config file not found at $config_file" >&2
-        return 1
-    fi
-
-    if ! command -v fzf &> /dev/null; then
-        echo "Error: fzf is not installed." >&2
-        return 1
-    fi
-
-    if ! command -v jq &> /dev/null; then
-        echo "Error: jq is not installed." >&2
-        return 1
-    fi
-
-    # If mode is set, try prefix match (e.g., "teams" matches "teams: Opus 4.7 ...")
-    if [[ -n "$mode" ]]; then
-        local full_key
-        full_key=$(jq -r --arg prefix "$mode" 'keys[] | select(startswith($prefix + ":"))' "$config_file" | head -1)
-        if [[ -n "$full_key" ]]; then
-            mode="$full_key"
-        fi
-    fi
-
-    # If mode not set or not found, prompt with fzf
-    while ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null; do
-        mode=$(jq -r 'keys[]' "$config_file" | fzf --prompt="Select Claude environment: " --height=40% --reverse)
-
-        if [[ -z "$mode" ]]; then
-            echo "No environment selected, please try again" >&2
-        elif ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null; then
-            echo "Mode '$mode' not found in config, please select again" >&2
-            mode=""
-        fi
-    done
-
-    if jq -e 'has("model")' "$settings" >/dev/null; then
-        new_config=$(jq 'del(.model)' "$settings")
-        echo "$new_config" > "$settings"
-    fi
-
-      (
-          while IFS='=' read -r key value; do
-              export "$key=$value"
-          done < <(jq -r --arg mode "$mode" '.[$mode] | to_entries | .[] | "\(.key)=\(.value)"' "$config_file")
-          claude "$@"
-      )
-}
-
 function cleanupClaudeJson () {
     jq '.projects |= with_entries(select(.key | startswith("/private/var/folders/") | not))' ~/.claude.json > tmp.json
     mv tmp.json ~/.claude.json
