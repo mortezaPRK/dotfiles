@@ -1,0 +1,103 @@
+#!/bin/bash
+
+config_file="$HOME/.config/ai.json"
+
+function die() {
+    echo "$@" >&2
+    exit 1
+}
+
+function check() {
+    if [[ ! -f "$config_file" ]]
+    then
+        die "Error: Config file not found at $config_file"
+    fi
+
+    if ! command -v fzf &> /dev/null
+    then
+        die "Error: fzf is not installed."
+    fi
+
+    if ! command -v jq &> /dev/null
+    then
+        die "Error: jq is not installed."
+    fi
+}
+
+function get_env() {
+    local mode="${AI_MODE}"
+    if [[ -n "$mode" ]]
+    then
+        local full_key
+        full_key=$(jq -r --arg prefix "$mode" 'keys[] | select(startswith($prefix + ":"))' "$config_file" | head -1)
+        if [[ -n "$full_key" ]]
+        then
+            mode="$full_key"
+        fi
+    fi
+
+    while ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null
+    do
+        mode=$(jq -r 'keys[]' "$config_file" | fzf --prompt="Select Claude environment: " --height=40% --reverse)
+        if [ $? -eq 130 ]; then exit 1; fi
+
+        if [[ -z "$mode" ]]
+        then
+            echo "No environment selected, please try again" >&2
+        elif ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null
+        then
+            echo "Mode '$mode' not found in config, please select again" >&2
+            mode=""
+        fi
+    done
+
+    jq -r --arg mode "$mode" '
+      .[$mode]
+      | to_entries[]
+      | @sh "export \(.key)=\(.value)"
+    ' "$config_file"
+
+    jq -r --arg mode "$mode" '
+      .[$mode]
+      | keys
+      | join(" ")
+      | @sh "export AI_KEYS=\(.)"
+    ' "$config_file"
+}
+
+function sanitize_claude_settings() {
+    local settings="$HOME/.claude/settings.json"
+    if jq -e 'has("model")' "$settings" > /dev/null
+    then
+        local new_config=$(jq 'del(.model)' "$settings")
+        echo "$new_config" > "$settings"
+    fi
+}
+
+check
+envs=$(get_env)
+eval "$envs"
+
+case "$1" in
+    ""|-h|--help)
+        echo "Usage: ai [command] [args]"
+        echo "Usage: ai --help"
+        echo "Usage: ai --print-env"
+        exit 0
+        ;;
+    --print-env)
+        echo "$envs"
+        exit 0
+        ;;
+    ssh)
+        if [ -n "$AI_KEYS" ]; then
+            shift
+            set -- ssh -o SendEnv="${AI_KEYS}" "$@"
+        fi
+        ;;
+    claude)
+        sanitize_claude_settings
+        ;;
+esac
+
+exec "$@"
