@@ -28,7 +28,7 @@ bindkey "^[[B" down-line-or-beginning-search # Down arrow
 #######################################
 ############### PLUGINGS ##############
 #######################################
-fpath+=${ZSH}/custom/plugins/zsh-completions/src
+fpath+=(~/.zsh/completions)
 fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
 autoload -U compinit && compinit
 

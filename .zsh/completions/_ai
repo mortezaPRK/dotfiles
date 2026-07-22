@@ -1,0 +1,46 @@
+#compdef ai
+
+_ai() {
+    local state
+
+    _arguments -C \
+        '1: :->command' \
+        '*:: :->args' && return 0
+
+    case $state in
+        command)
+            local -a builtin_cmds
+            builtin_cmds=(
+                'help:show usage'
+                '--help:show usage'
+                '--print-env:print exported environment variables'
+            )
+
+            local -a path_cmds
+            path_cmds=("${(@f)$(compgen -c 2>/dev/null | sort -u | while read -r cmd; do
+                printf '%s:%s\n' "$cmd" "$(whence -p "$cmd" 2>/dev/null || true)"
+            done)}")
+
+            _describe 'command' builtin_cmds
+            _command_names -e
+            ;;
+        args)
+            case $words[1] in
+                help|--help|--print-env)
+                    # no further args
+                    ;;
+                *)
+                    # delegate to the subcommand's own completion
+                    local cmd=$words[1]
+                    if (( $+commands[$cmd] )); then
+                        words=("$cmd" "${words[@]:1}")
+                        CURRENT=$(( CURRENT ))
+                        _dispatch "$cmd" "$cmd"
+                    fi
+                    ;;
+            esac
+            ;;
+    esac
+}
+
+_ai "$@"
