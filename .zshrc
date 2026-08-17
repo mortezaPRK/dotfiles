@@ -91,3 +91,4 @@ gc() {
 [ -f $HOME/.local.zshrc ] && source $HOME/.local.zshrc
 
 eval "$(starship init zsh)"
+

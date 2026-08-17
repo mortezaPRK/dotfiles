@@ -1,6 +1,6 @@
 #!/bin/bash
 
-config_file="$HOME/.config/ai.json"
+config_file="$HOME/.config/ai.yaml"
 
 function die() {
     echo "$@" >&2
@@ -18,60 +18,70 @@ function check() {
         die "Error: fzf is not installed."
     fi
 
-    if ! command -v jq &> /dev/null
+    if ! command -v yq &> /dev/null
     then
-        die "Error: jq is not installed."
+        die "Error: yq is not installed."
+    fi
+
+    local err
+    if ! err=$(yq -e '.' "$config_file" 2>&1 >/dev/null)
+    then
+        die "Error: invalid config file $config_file: $err"
+    fi
+
+    local dups
+    dups=$(yq -r '.profiles | keys | group_by(.) | filter(length > 1) | map(.[0]) | join(", ")' "$config_file")
+    if [[ -n "$dups" ]]
+    then
+        die "Error: duplicate profile name(s) in $config_file: $dups"
     fi
 }
 
 function get_env() {
     local mode="${AI_MODE}"
-    if [[ -n "$mode" ]]
+
+    if [[ -n "$mode" ]] && ! AI_LOOKUP="$mode" yq -e '.profiles[strenv(AI_LOOKUP)]' "$config_file" &>/dev/null
     then
         local full_key
-        full_key=$(jq -r --arg prefix "$mode" 'keys[] | select(startswith($prefix + ":"))' "$config_file" | head -1)
-        if [[ -n "$full_key" ]]
-        then
-            mode="$full_key"
-        fi
+        full_key=$(AI_PREFIX="$mode" yq -r '.profiles | keys | .[] | select(test("^" + strenv(AI_PREFIX)))' "$config_file" | head -1)
+        [[ -n "$full_key" ]] && mode="$full_key"
     fi
 
-    while ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null
+    while ! AI_LOOKUP="$mode" yq -e '.profiles[strenv(AI_LOOKUP)]' "$config_file" &>/dev/null
     do
-        mode=$(jq -r 'keys[]' "$config_file" | fzf --prompt="Select Claude environment: " --height=40% --reverse)
+        local sel
+        sel=$(yq -r '.profiles | to_entries | .[] | .key + ": " + .value.desc' "$config_file" \
+              | fzf --prompt="Select Claude environment: " --height=40% --reverse)
         if [ $? -eq 130 ]; then exit 1; fi
 
-        if [[ -z "$mode" ]]
+        if [[ -z "$sel" ]]
         then
             echo "No environment selected, please try again" >&2
-        elif ! jq -e --arg mode "$mode" '.[$mode]' "$config_file" &> /dev/null
-        then
-            echo "Mode '$mode' not found in config, please select again" >&2
             mode=""
+        else
+            mode="${sel%%: *}"
         fi
     done
 
-    jq -r --arg mode "$mode" '
-      .[$mode]
-      | to_entries[]
-      | @sh "export \(.key)=\(.value)"
-    ' "$config_file"
+    local entry line key val
+    local -a keys=()
+    entry=$(AI_LOOKUP="$mode" yq --yaml-fix-merge-anchor-to-spec -r '.profiles[strenv(AI_LOOKUP)].env | explode(.) | to_entries | .[] | .key + "=" + .value' "$config_file")
 
-    jq -r --arg mode "$mode" '
-      .[$mode]
-      | keys
-      | join(" ")
-      | @sh "export AI_KEYS=\(.)"
-    ' "$config_file"
+    while IFS= read -r line
+    do
+        [[ -z "$line" ]] && continue
+        key="${line%%=*}"
+        val="${line#*=}"
+        printf 'export %s=%q\n' "$key" "$val"
+        keys+=("$key")
+    done <<< "$entry"
+
+    printf 'export AI_KEYS=%q\n' "${keys[*]}"
 }
 
 function sanitize_claude_settings() {
     local settings="$HOME/.claude/settings.json"
-    if jq -e 'has("model")' "$settings" > /dev/null
-    then
-        local new_config=$(jq 'del(.model)' "$settings")
-        echo "$new_config" > "$settings"
-    fi
+    yq -i -o=json 'del(.model)' "$settings"
 }
 
 check
