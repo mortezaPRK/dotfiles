@@ -1,7 +1,3 @@
-export PATH="$HOME/.bin:$HOME/.local/bin:$PATH"
-export ASDF_DATA_DIR="$HOME/.asdf"
-export PATH="$ASDF_DATA_DIR/shims:$PATH"
-
 #######################################
 ########### HISTORY CONFIGS ###########
 #######################################
@@ -29,10 +25,8 @@ bindkey "^[[B" down-line-or-beginning-search # Down arrow
 ############### PLUGINGS ##############
 #######################################
 fpath+=(~/.zsh/completions)
-fpath=(${ASDF_DATA_DIR:-$HOME/.asdf}/completions $fpath)
 autoload -U compinit && compinit
 
-[[ -f ${ASDF_DATA_DIR}/plugins/java/set-java-home.zsh ]] && . ${ASDF_DATA_DIR}/plugins/java/set-java-home.zsh
 command -v stern &> /dev/null && source <(stern --completion=zsh)
 #######################################
 ################ COMMON ###############
@@ -58,11 +52,6 @@ function clone () {
     mkdir -p $clone_path
     git clone $1 $clone_path
     cd $clone_path
-}
-
-function cleanupClaudeJson () {
-    jq '.projects |= with_entries(select(.key | startswith("/private/var/folders/") | not))' ~/.claude.json > tmp.json
-    mv tmp.json ~/.claude.json
 }
 
 gc() {
