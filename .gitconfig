@@ -1,5 +1,5 @@
 [user]
-	name = Morteza Pourkazemi
+	name = Morteza PRK
 	email = mortezaPRK@users.noreply.github.com
 
 [difftool]
@@ -29,3 +29,8 @@
 	p = !git push --set-upstream origin \"$(git symbolic-ref --short -q HEAD)\"
 	s = !git fetch --all --prune --tags && git pull --ff-only
 
+[filter "lfs"]
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
