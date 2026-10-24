@@ -32,8 +32,8 @@ elif [ -d "/opt/homebrew" ]; then
 fi
 
 brew_taps="github/gh "
-brew_casks="rectangle font-fira-code font-fira-code-nerd-font vlc iterm2 claude-code ghostty podman-desktop zed"
-brew_formula="asdf jq bash-completion watch gh wget fzf starship uv"
+brew_casks="rectangle font-fira-code font-fira-code-nerd-font vlc iterm2 ghostty zed"
+brew_formula="podman jq bash-completion watch gh wget fzf starship uv"
 
 for tap in $brew_taps; do
     brew tap $tap
