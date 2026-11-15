@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+exec uv run --quiet --no-project --script \
+  "${SERVICES_CONFIG_HOME:-$HOME/.config/services}/services.py" "$@"

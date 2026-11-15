@@ -1,0 +1,18 @@
+processes:
+  caffeinate:
+    description: Prevent idle system and display sleep
+    # Release the child's sleep assertion before exiting.
+    command: |
+      /usr/bin/caffeinate -di &
+      child=$!
+      trap 'kill -TERM "$child" 2>/dev/null || :; wait "$child" 2>/dev/null || :; exit 0' TERM INT
+      wait "$child"
+    shutdown:
+      signal: 15
+      timeout_seconds: 5
+    availability:
+      restart: on_failure
+      backoff_seconds: 2
+      max_restarts: 3
+    x-service:
+      title: Caffeinate

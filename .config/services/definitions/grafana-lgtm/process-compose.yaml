@@ -1,0 +1,70 @@
+processes:
+  grafana-lgtm:
+    description: Local OpenTelemetry logs, traces, metrics and Grafana
+    command: |
+      set -eu
+      container=services-grafana-lgtm
+      if "$PODMAN_BIN" container exists "$container"; then
+        owner=$("$PODMAN_BIN" inspect --format '{{index .Config.Labels "dev.mortz.services"}}' "$container")
+        [ "$owner" = grafana-lgtm ] || { echo "Container is not owned by this service" >&2; exit 1; }
+        if [ "$("$PODMAN_BIN" inspect --format '{{.State.Running}}' "$container")" = true ]; then
+          exec "$PODMAN_BIN" attach --sig-proxy=false "$container"
+        fi
+        "$PODMAN_BIN" rm "$container"
+      fi
+      if ! "$PODMAN_BIN" volume exists services-grafana-lgtm-data; then
+        "$PODMAN_BIN" volume create --label dev.mortz.services=grafana-lgtm services-grafana-lgtm-data
+      fi
+      set -- run --name "$container" --sig-proxy=false
+      set -- "$@" --label dev.mortz.services=grafana-lgtm
+      set -- "$@" --volume services-grafana-lgtm-data:/data --stop-timeout 30
+      set -- "$@" --env LGTM_SHUTDOWN_TIMEOUT_SECONDS=20
+      set -- "$@" --publish "127.0.0.1:$LGTM_GRAFANA_PORT:3000"
+      set -- "$@" --publish "127.0.0.1:$LGTM_OTLP_GRPC_PORT:4317"
+      set -- "$@" --publish "127.0.0.1:$LGTM_OTLP_HTTP_PORT:4318"
+      exec "$PODMAN_BIN" "$@" "$LGTM_IMAGE"
+    is_template_disabled: true
+    environment:
+      - PODMAN_BIN=/opt/podman/bin/podman
+      - LGTM_IMAGE=docker.io/grafana/otel-lgtm:0.41.0
+      - LGTM_GRAFANA_PORT=3000
+      - LGTM_OTLP_GRPC_PORT=4317
+      - LGTM_OTLP_HTTP_PORT=4318
+    depends_on:
+      podman:
+        condition: process_healthy
+    shutdown:
+      command: |
+        set -eu
+        if [ "$("$PODMAN_BIN" machine inspect --format '{{.State}}')" = stopped ]; then exit 0; fi
+        if "$PODMAN_BIN" container exists services-grafana-lgtm; then
+          [ "$("$PODMAN_BIN" inspect --format '{{index .Config.Labels "dev.mortz.services"}}' services-grafana-lgtm)" = grafana-lgtm ]
+          "$PODMAN_BIN" stop --time 30 services-grafana-lgtm
+        else
+          "$PODMAN_BIN" info >/dev/null
+        fi
+      timeout_seconds: 60
+    readiness_probe:
+      exec:
+        command: |
+          "$PODMAN_BIN" exec services-grafana-lgtm test -f /tmp/ready &&
+          /usr/bin/curl --silent --fail --max-time 3 "http://127.0.0.1:$LGTM_GRAFANA_PORT/api/health" >/dev/null
+      period_seconds: 5
+      timeout_seconds: 10
+      failure_threshold: 60
+    availability:
+      restart: on_failure
+      backoff_seconds: 10
+      max_restarts: 5
+    x-service:
+      title: Grafana LGTM
+      default_autostart: true
+      url: http://127.0.0.1:3000
+      start_timeout: 600
+      stopped_check: |
+        set -eu
+        if [ "$("$PODMAN_BIN" machine inspect --format '{{.State}}')" = stopped ]; then exit 0; fi
+        "$PODMAN_BIN" info >/dev/null
+        if "$PODMAN_BIN" container exists services-grafana-lgtm; then
+          [ "$("$PODMAN_BIN" inspect --format '{{.State.Running}}' services-grafana-lgtm)" = false ]
+        fi

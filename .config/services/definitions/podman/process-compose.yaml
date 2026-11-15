@@ -1,0 +1,39 @@
+processes:
+  podman:
+    description: Podman VM and the system-wide Docker-compatible socket
+    command: exec /opt/homebrew/bin/uv run --quiet --no-project --script "$HOME/.config/services/definitions/podman/start.py"
+    environment:
+      - PODMAN_BIN=/opt/podman/bin/podman
+      - PODMAN_MACHINE=podman-machine-default
+    is_daemon: true
+    is_template_disabled: true
+    shutdown:
+      command: |
+        set -eu
+        if [ "$("$PODMAN_BIN" machine inspect --format '{{.State}}' "$PODMAN_MACHINE")" != stopped ]; then
+          "$PODMAN_BIN" machine stop "$PODMAN_MACHINE"
+        fi
+      timeout_seconds: 90
+    readiness_probe: &ready
+      exec:
+        command: |
+          "$PODMAN_BIN" info --format json >/dev/null &&
+          [ "$(/usr/bin/curl --silent --fail --max-time 4 --unix-socket /var/run/docker.sock http://localhost/_ping)" = OK ]
+      period_seconds: 5
+      timeout_seconds: 10
+      failure_threshold: 12
+    liveness_probe:
+      <<: *ready
+      initial_delay_seconds: 15
+      period_seconds: 15
+      timeout_seconds: 10
+      failure_threshold: 3
+    availability:
+      restart: always
+      backoff_seconds: 10
+      max_restarts: 5
+    x-service:
+      title: Podman
+      default_autostart: true
+      start_timeout: 180
+      stopped_check: test "$("$PODMAN_BIN" machine inspect --format '{{.State}}' "$PODMAN_MACHINE")" = stopped

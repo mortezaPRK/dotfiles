@@ -1,0 +1,5 @@
+# Directories are read in this order; later files override earlier values.
+# Each directory is searched recursively for *.yaml and *.yml.
+definition_dirs:
+  - ~/.config/services/definitions
+  - ~/.local/share/services/definitions

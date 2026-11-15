@@ -31,8 +31,8 @@ elif [ -d "/opt/homebrew" ]; then
   eval "$(/opt/homebrew/bin/brew shellenv)"
 fi
 
-brew_taps="github/gh "
-brew_casks="rectangle font-fira-code font-fira-code-nerd-font vlc iterm2 ghostty zed"
+brew_taps="github/gh f1bonacc1/tap "
+brew_casks="rectangle font-fira-code font-fira-code-nerd-font vlc iterm2 ghostty zed hammerspoon"
 brew_formula="podman jq bash-completion watch gh wget fzf starship uv"
 
 for tap in $brew_taps; do
@@ -40,6 +40,11 @@ for tap in $brew_taps; do
 done
 brew install --cask $brew_casks
 brew install $brew_formula
+
+# File-defined local services; installer preserves machine-local startup choices.
+if [ -f "$HOME/.config/services/install.sh" ]; then
+    sh "$HOME/.config/services/install.sh"
+fi
 
 # Remove passwordless sudo access
 sudo rm -rf $SUDOERS_FILE

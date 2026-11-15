@@ -1,0 +1,42 @@
+processes:
+  opensuperwhisper:
+    description: OpenSuperWhisper desktop application
+    command: /usr/bin/open -g -j -a /Applications/OpenSuperWhisper.app
+    is_daemon: true
+    is_template_disabled: true
+    shutdown:
+      command: |
+        /usr/bin/osascript -l JavaScript <<'JXA'
+        ObjC.import("AppKit");
+        var bundle = "ru.starmel.OpenSuperWhisper";
+        var apps = $.NSRunningApplication.runningApplicationsWithBundleIdentifier(bundle);
+        for (var i = 0; i < apps.count; i++) apps.objectAtIndex(i).terminate;
+        var deadline = Date.now() + 35000;
+        while ($.NSRunningApplication.runningApplicationsWithBundleIdentifier(bundle).count > 0) {
+            if (Date.now() >= deadline) throw Error("OpenSuperWhisper did not quit");
+            delay(0.5);
+        }
+        JXA
+      timeout_seconds: 45
+    readiness_probe: &ready
+      exec:
+        command: |
+          test "$(/usr/bin/osascript -l JavaScript -e 'ObjC.import("AppKit"); $.NSRunningApplication.runningApplicationsWithBundleIdentifier("ru.starmel.OpenSuperWhisper").count')" -gt 0
+      period_seconds: 5
+      timeout_seconds: 5
+      failure_threshold: 12
+    liveness_probe:
+      <<: *ready
+      initial_delay_seconds: 10
+      period_seconds: 10
+      timeout_seconds: 5
+      failure_threshold: 2
+    availability:
+      restart: "no"
+    x-service:
+      title: OpenSuperWhisper
+      default_autostart: true
+      app: /Applications/OpenSuperWhisper.app
+      start_timeout: 90
+      stopped_check: |
+        test "$(/usr/bin/osascript -l JavaScript -e 'ObjC.import("AppKit"); $.NSRunningApplication.runningApplicationsWithBundleIdentifier("ru.starmel.OpenSuperWhisper").count')" -eq 0
