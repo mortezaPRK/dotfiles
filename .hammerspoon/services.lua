@@ -107,8 +107,13 @@ local function buildMenu()
     end
     for _, item in ipairs(snapshot.services or {}) do
         local service = item
+        local status = service.status
+        if status == "Disabled" or
+            (status == "Completed" and service.exit_code == 0 and service.kind ~= "action") then
+            status = "Stopped"
+        end
         local children = {
-            { title = "Status: " .. service.status .. (service.health ~= "-" and (" / " .. service.health) or ""), disabled = true },
+            { title = "Status: " .. status .. (service.health ~= "-" and (" / " .. service.health) or ""), disabled = true },
             { title = "-" },
             { title = service.kind == "action" and "Run" or "Start", disabled = locked or service.active,
               fn = function() action("start", service.name) end },
