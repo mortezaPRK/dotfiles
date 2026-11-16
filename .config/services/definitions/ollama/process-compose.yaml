@@ -1,0 +1,28 @@
+processes:
+  ollama:
+    description: Local model API
+    command: exec /opt/homebrew/opt/ollama/bin/ollama serve
+    environment:
+      - OLLAMA_HOST=127.0.0.1:11434
+      - OLLAMA_CONTEXT_LENGTH=65536
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KV_CACHE_TYPE=q8_0
+    readiness_probe:
+      http_get:
+        host: 127.0.0.1
+        port: 11434
+        path: /api/version
+      period_seconds: 5
+      timeout_seconds: 3
+      failure_threshold: 12
+    shutdown:
+      signal: 15
+      timeout_seconds: 30
+    availability:
+      restart: on_failure
+      backoff_seconds: 5
+      max_restarts: 3
+    x-service:
+      title: Ollama
+      url: http://127.0.0.1:11434
+      start_timeout: 90
