@@ -79,6 +79,14 @@ class GraphTests(unittest.TestCase):
         command.assert_not_called()
         wait.assert_not_called()
 
+    def test_reload_restarts_reads_metadata(self):
+        catalog = {"project": {"processes": {
+            "vm": {"x-service": {"reload": "restart"}},
+            "db": {"x-service": {}},
+            "plain": {},
+        }}}
+        self.assertEqual(services.reload_restarts(catalog), {"vm"})
+
 
 class ProcessComposeIntegration(unittest.TestCase):
     """Real Process Compose, isolated directories and disposable fixture processes."""
@@ -112,7 +120,7 @@ class ProcessComposeIntegration(unittest.TestCase):
             "while True: time.sleep(0.1)\n"
         )
         processes = {}
-        for name in ("db", "worker"):
+        for name in ("db", "worker", "guard"):
             processes[name] = {
                 "command": "exec " + shlex.join([sys.executable, str(cls.fixture), name, str(cls.root)]),
                 "readiness_probe": {"exec": {"command": "test -e " + shlex.quote(str(cls.root / (name + ".ready")))},
@@ -121,6 +129,7 @@ class ProcessComposeIntegration(unittest.TestCase):
                 "x-service": {"start_timeout": 15},
             }
         processes["worker"]["depends_on"] = {"db": {"condition": "process_healthy"}}
+        processes["guard"]["x-service"]["reload"] = "restart"
         processes["action"] = {"command": "echo action >> " + shlex.quote(str(cls.root / "actions")),
                                "x-service": {"kind": "action"}}
         (cls.shared / "base.yaml").write_text(yaml.safe_dump({"processes": processes}))
@@ -202,6 +211,41 @@ class ProcessComposeIntegration(unittest.TestCase):
         self.assertTrue(worker["active"])
         self.cli("stop", "all")
         self.assertFalse(any(row["active"] for row in json.loads(self.cli("status", "--json").stdout)["services"]))
+
+    def test_reload_leaves_unchanged_services_running(self):
+        self.cli("start", "worker")
+        markers = {name: (self.root / (name + ".ready")).stat().st_mtime_ns
+                   for name in ("db", "worker")}
+        reloaded = self.cli("reload")
+        self.assertNotIn("Stopping", reloaded.stdout)
+        self.assertEqual({name: (self.root / (name + ".ready")).stat().st_mtime_ns
+                          for name in ("db", "worker")}, markers)
+        status = json.loads(self.cli("status", "--json").stdout)
+        self.assertEqual({row["name"] for row in status["services"] if row["active"]},
+                         {"db", "worker"})
+
+    def test_reload_restarts_changed_service(self):
+        self.cli("start", "worker")
+        before = (self.root / "worker.ready").stat().st_mtime_ns
+        (self.local / "worker.yaml").write_text(
+            "processes:\n  worker:\n    x-service:\n      title: Worker\n")
+        reloaded = self.cli("reload")
+        self.assertIn("Restarting worker (definition changed)", reloaded.stdout)
+        worker = next(row for row in json.loads(self.cli("status", "--json").stdout)["services"]
+                      if row["name"] == "worker")
+        self.assertEqual(worker["title"], "Worker")
+        self.assertTrue(worker["active"])
+        self.assertNotEqual((self.root / "worker.ready").stat().st_mtime_ns, before)
+
+    def test_reload_restarts_opted_in_service(self):
+        self.cli("start", "guard")
+        started = (self.root / "guard.ready").stat().st_mtime_ns
+        reloaded = self.cli("reload")
+        self.assertIn("Restarting guard (x-service.reload: restart)", reloaded.stdout)
+        guard = next(row for row in json.loads(self.cli("status", "--json").stdout)["services"]
+                     if row["name"] == "guard")
+        self.assertTrue(guard["active"])
+        self.assertNotEqual((self.root / "guard.ready").stat().st_mtime_ns, started)
 
 
 if __name__ == "__main__":

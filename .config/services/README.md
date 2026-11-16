@@ -10,7 +10,7 @@ svc enable caffeinate     # login startup only; does not start it now
 svc disable caffeinate
 svc logs grafana-lgtm
 svc validate
-svc reload                # briefly stops/restores running services
+svc reload                # applies changed definitions; leaves other services running
 ```
 
 - Shared: `~/.config/services/definitions/<service>/process-compose.yaml`
@@ -19,6 +19,9 @@ svc reload                # briefly stops/restores running services
 
 Use Process Compose fields and keep scripts beside the YAML. Optional `x-service`
 sets menu details, timeouts, and stop checks; `kind: action` marks one-shot commands.
+`svc reload` is quiet by default: services that are running and unchanged keep running, and
+only ones whose definition changed are bounced. `reload: restart` opts a service into a
+restart on every reload; a restarted dependency takes its running dependents with it.
 
 After edits: `svc validate && svc reload`. Use `svc` or the menu to preserve dependency
 ordering. Login choices: `~/.local/state/services/autostart.json`, seeded once by

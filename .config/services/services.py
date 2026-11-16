@@ -167,6 +167,12 @@ def save_catalog(catalog):
     atomic_write(CATALOG, json.dumps(catalog, indent=2) + "\n")
 
 
+def reload_restarts(catalog):
+    """Services opting into a restart on reload (`x-service.reload: restart`)."""
+    return {name for name, proc in catalog["project"]["processes"].items()
+            if proc.get("x-service", {}).get("reload") == "restart"}
+
+
 def enabled_services():
     path = STATE / "autostart.json"
     if not path.exists():
@@ -449,11 +455,28 @@ def main():
         if args.command == "reload":
             catalog = discover()
             candidate = validate(catalog)
+            processes = catalog["project"]["processes"]
             previous = [name for name, row in states().items() if active(row)]
-            manager.stop(list(manager.processes))
+            # Reload is quiet by default: only changed services and services that opt
+            # in with `reload: restart` are bounced. Everything else keeps running.
+            changed = {name for name in previous
+                       if name in processes and manager.processes.get(name) != processes[name]}
+            opted = reload_restarts(catalog) & set(previous) & set(processes)
+            removed = {name for name in manager.processes if name not in processes}
+            seeds = changed | opted
+            if changed:
+                print(f"Restarting {', '.join(sorted(changed))} (definition changed)", flush=True)
+            if opted - changed:
+                print(f"Restarting {', '.join(sorted(opted - changed))} "
+                      f"(x-service.reload: restart)", flush=True)
+            if removed:
+                print(f"Removing {', '.join(sorted(removed))} (no longer defined)", flush=True)
+            manager.stop(sorted(seeds | removed))
             pc("project", "update", "--config", str(candidate), timeout=60)
             save_catalog(catalog)
-            Manager(catalog).start([name for name in previous if name in catalog["project"]["processes"]])
+            # A restarted dependency takes its running dependents with it.
+            restart = {name for name in dependents(processes, seeds) if name in previous}
+            Manager(catalog).start(sorted(restart))
             print("Definitions reloaded")
             return
         names = list(manager.processes) if args.names == ["all"] else args.names
