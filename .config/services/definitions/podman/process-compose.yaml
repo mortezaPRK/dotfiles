@@ -3,7 +3,7 @@ processes:
     description: Podman VM and the system-wide Docker-compatible socket
     command: exec /opt/homebrew/bin/uv run --quiet --no-project --script "$HOME/.config/services/definitions/podman/start.py"
     environment:
-      - PODMAN_BIN=/opt/podman/bin/podman
+      - PODMAN_BIN=/opt/homebrew/bin/podman
       - PODMAN_MACHINE=podman-machine-default
     is_daemon: true
     is_template_disabled: true

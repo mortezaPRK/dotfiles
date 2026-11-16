@@ -25,7 +25,7 @@ processes:
       exec "$PODMAN_BIN" "$@" "$LGTM_IMAGE"
     is_template_disabled: true
     environment:
-      - PODMAN_BIN=/opt/podman/bin/podman
+      - PODMAN_BIN=/opt/homebrew/bin/podman
       - LGTM_IMAGE=docker.io/grafana/otel-lgtm:0.41.0
       - LGTM_GRAFANA_PORT=3000
       - LGTM_OTLP_GRPC_PORT=4317

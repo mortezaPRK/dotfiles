@@ -67,6 +67,18 @@ class GraphTests(unittest.TestCase):
                 manager.stop(["vm"])
         command.assert_not_called()
 
+    def test_explicitly_stopped_process_skips_external_check(self):
+        # An externally owned resource (e.g. a VM started by another login agent)
+        # must never block an explicit stop, reload, or supervisor shutdown.
+        processes = {"vm": {"x-service": {"stopped_check": "false"}}}
+        manager = services.Manager({"project": {"processes": processes}})
+        with patch.object(services, "states", return_value={}), \
+             patch.object(services, "pc") as command, \
+             patch.object(manager, "wait") as wait:
+            manager.stop(["vm"])
+        command.assert_not_called()
+        wait.assert_not_called()
+
 
 class ProcessComposeIntegration(unittest.TestCase):
     """Real Process Compose, isolated directories and disposable fixture processes."""

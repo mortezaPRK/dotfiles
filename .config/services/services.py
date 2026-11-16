@@ -280,6 +280,7 @@ class Manager:
                 self.wait(name)
 
     def stop(self, selected):
+        requested = set(selected)
         for name in selected:
             if name not in self.processes:
                 raise ServiceError(f"Unknown service: {name}")
@@ -291,8 +292,12 @@ class Manager:
                 timeout = self.processes[name].get("shutdown", {}).get("timeout_seconds", 30) + 15
                 pc("process", "stop", name, timeout=timeout)
                 self.wait(name, "stopped", timeout=timeout)
-            elif self.metadata(name).get("stopped_check"):
+            elif name not in requested and self.metadata(name).get("stopped_check"):
                 # Verify detached dependents stopped before stopping dependencies.
+                # Only dependents pulled in implicitly are checked: a process the caller
+                # asked to stop is not a detached dependent, and its stopped_check may
+                # describe an externally owned resource (such as a VM started by another
+                # login agent) that must not block reload or shutdown.
                 self.wait(name, "stopped", timeout=5)
 
 

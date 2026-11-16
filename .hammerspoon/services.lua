@@ -26,8 +26,16 @@ local function openPath(path, app)
     if task then tasks[task] = true; task:start() end
 end
 
+local lastError
+
 local function notify(message)
-    hs.notify.new({ title = "Services", informativeText = message }):send()
+    lastError = message
+    -- Notifications need permission and fail silently without it, so always
+    -- surface failures on screen as well.
+    local brief = message:match("^[^\n]*") or message
+    if #brief > 180 then brief = brief:sub(1, 179) .. "…" end
+    hs.alert.show(brief, 10)
+    hs.notify.new({ title = "Services", informativeText = message:sub(-1800) }):send()
 end
 
 local function statusIcon(service)
@@ -83,7 +91,14 @@ local function action(verb, name)
         tasks[task] = nil
         busy = false
         if code ~= 0 then
-            notify((stderr ~= "" and stderr or stdout):sub(-1800))
+            local detail = stderr
+            if detail == nil or detail == "" then detail = stdout end
+            if detail == nil or detail == "" then
+                detail = "svc exited with status " .. tostring(code)
+            end
+            notify(detail:sub(-1800))
+        else
+            lastError = nil
         end
         refresh()
     end, args)
@@ -101,6 +116,13 @@ local function buildMenu()
     local locked = busy or snapshot.busy ~= nil
     if snapshot.error then
         table.insert(entries, { title = "Supervisor unavailable — see logs", disabled = true })
+    end
+    if lastError then
+        table.insert(entries, { title = "Last action failed", menu = {
+            { title = lastError:match("^[^\n]*"):sub(1, 120), disabled = true },
+            { title = "-" },
+            { title = "Dismiss", fn = function() lastError = nil end },
+        } })
     end
     if locked then
         table.insert(entries, { title = snapshot.busy or "Operation in progress…", disabled = true })
