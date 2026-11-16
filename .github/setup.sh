@@ -85,9 +85,9 @@ defaults write com.apple.dock "show-recents" -bool false                        
 # Touchpad
 defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true                   # Tap to click on bluetooth trackpad
 defaults write com.apple.AppleMultitouchTrackpad Clicking -bool true                                    # Tap to click on builtin trackpad
-defaults com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerDrag -int 1              # Three finger scorll bluetooth trackpad
-defaults com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerHorizSwipeGesture -int 0 # Three finger scorll bluetooth trackpad
-defaults com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerVertSwipeGesture -int 0  # Three finger scorll bluetooth trackpad
+defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerDrag -int 1              # Three finger scorll bluetooth trackpad
+defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerHorizSwipeGesture -int 0 # Three finger scorll bluetooth trackpad
+defaults write com.apple.driver.AppleBluetoothMultitouch.trackpad TrackpadThreeFingerVertSwipeGesture -int 0  # Three finger scorll bluetooth trackpad
 defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerDrag -int 1                         # Three finger scorll builtin trackpad
 defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerHorizSwipeGesture -int 0            # Three finger scorll builtin trackpad
 defaults write com.apple.AppleMultitouchTrackpad TrackpadThreeFingerVertSwipeGesture -int 0             # Three finger scorll builtin trackpad
